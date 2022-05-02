@@ -9,9 +9,10 @@ const fs = require('fs');
 		event: 'styles__WrapperLink',
 		edit: 'styles__EditButton'
 	}
+	const GAMESCOUNT = 53;
 
 	// set up browser and page objects
-	const browser = await puppeteer.launch()//{ headless: false })
+	const browser = await puppeteer.launch({ headless: false })
 
 	const page = await browser.newPage()
 	page.setViewport({ width: 1280, height: 720 })
@@ -50,19 +51,66 @@ const fs = require('fs');
 		}, btnidx, btnclass)
 	}
 
+	const getAllEventLinks = async (btntype, gcount) => {
+		return await page.evaluate(async (btntype, gcount) => {
+			return await new Promise(async resolve => {
+				function waitForElem(selector) {
+					return new Promise(resolve => {
+						if (document.querySelector(selector)) {
+							return resolve(document.querySelector(selector));
+						}
+				
+						const observer = new MutationObserver(mutations => {
+							if (document.querySelector(selector)) {
+								resolve(document.querySelector(selector));
+								observer.disconnect();
+							}
+						});
+				
+						observer.observe(document.body, {
+							childList: true,
+							subtree: true
+						});
+					});
+				}
+
+				waitForElem('#onetrust-accept-btn-handler')
+					.then(btn => btn.click())
+
+				// musi byc tak bo sa na stronie 53 ukryte guziki i juz mam dosyc tej strony
+				for (let gindex = 0; gindex < gcount; gindex++) {
+					const gameBtns = document.querySelectorAll(`[class^="${btntype.game}"]`)
+					gameBtns[gindex].click()
+					console.log(gameBtns[gindex].textContent)
+
+					let sbtn = await waitForElem(`[class^="${btntype.sport}"]`)
+					const sportBtns = document.querySelectorAll(`[class^="${btntype.sport}"]`)
+					console.log(sportBtns)
+
+					document.querySelector(`[class^="${btntype.edit}"]`).click()
+					const tbtn = await waitForElem(`[class^="${btntype.game}"]`)
+				}
+				resolve('dziala')
+			})
+		}, btntype, gcount)
+	}
+
 	// actual scraping
 	await page.goto('https://olympics.com/en/olympic-games/olympic-results')
 
-	const gameBtns = await getButtonsNames(btnType.game)
-	await clickBtnWithIndex(5, btnType.game)
+	// const gameBtns = await getButtonsNames(btnType.game)
+	// await clickBtnWithIndex(5, btnType.game)
 
-	await page.waitForSelector(`[class^="${btnType.sport}"]`, { timeout: 10000 })
-	const sportBtns = await getButtonsNames(btnType.sport)
-	await clickBtnWithIndex(0, btnType.sport)
+	// await page.waitForSelector(`[class^="${btnType.sport}"]`, { timeout: 10000 })
+	// const sportBtns = await getButtonsNames(btnType.sport)
+	// await clickBtnWithIndex(0, btnType.sport)
 	
-	console.log(gameBtns[5], sportBtns[0])
+	// console.log(gameBtns[5], sportBtns[0])
 
-	await page.screenshot({ path: 'debugolimp.png' })
+	// await page.screenshot({ path: 'debugolimp.png' })
 
-	await browser.close()
+	const potwierdzenie = await getAllEventLinks(btnType, GAMESCOUNT)
+	console.log(potwierdzenie)
+
+	// await browser.close()
 })()
