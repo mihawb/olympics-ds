@@ -54,19 +54,20 @@ const fs = require('fs');
 	const getAllEventLinks = async (btntype, gcount) => {
 		return await page.evaluate(async (btntype, gcount) => {
 			return await new Promise(async resolve => {
-				function waitForElem(selector) {
+
+				const waitForElem = (selector) => {
 					return new Promise(resolve => {
 						if (document.querySelector(selector)) {
 							return resolve(document.querySelector(selector));
 						}
-				
+
 						const observer = new MutationObserver(mutations => {
 							if (document.querySelector(selector)) {
 								resolve(document.querySelector(selector));
 								observer.disconnect();
 							}
 						});
-				
+
 						observer.observe(document.body, {
 							childList: true,
 							subtree: true
@@ -74,25 +75,38 @@ const fs = require('fs');
 					});
 				}
 
+				const game2sport = []
+
 				waitForElem('#onetrust-accept-btn-handler')
 					.then(btn => btn.click())
 
 				// musi byc tak bo sa na stronie 53 ukryte guziki i juz mam dosyc tej strony
 				for (let gindex = 0; gindex < gcount; gindex++) {
 					const gameBtns = document.querySelectorAll(`[class^="${btntype.game}"]`)
+					// gameBtns[gindex] to aktualne igrzyska (game)
 					gameBtns[gindex].click()
-					console.log(gameBtns[gindex].textContent)
+					// console.log(gameBtns[gindex].textContent)
 
 					let sbtn = await waitForElem(`[class^="${btntype.sport}"]`)
 					const sportBtns = document.querySelectorAll(`[class^="${btntype.sport}"]`)
-					console.log(sportBtns)
+					// console.log(sportBtns)
+					for (const sport of sportBtns) {
+						game2sport.push(`${gameBtns[gindex].textContent}, ${sport.textContent}`)
+					}
 
 					document.querySelector(`[class^="${btntype.edit}"]`).click()
 					const tbtn = await waitForElem(`[class^="${btntype.game}"]`)
 				}
-				resolve('dziala')
+				resolve(game2sport)
 			})
 		}, btntype, gcount)
+	}
+
+	const handleErrOnWrite = err => {
+		if (err) {
+			console.error(err)
+			return
+		}
 	}
 
 	// actual scraping
@@ -104,13 +118,17 @@ const fs = require('fs');
 	// await page.waitForSelector(`[class^="${btnType.sport}"]`, { timeout: 10000 })
 	// const sportBtns = await getButtonsNames(btnType.sport)
 	// await clickBtnWithIndex(0, btnType.sport)
-	
+
 	// console.log(gameBtns[5], sportBtns[0])
 
 	// await page.screenshot({ path: 'debugolimp.png' })
 
+	fs.unlink('../data/game2sport.txt', handleErrOnWrite)
 	const potwierdzenie = await getAllEventLinks(btnType, GAMESCOUNT)
-	console.log(potwierdzenie)
-
+	// console.log(potwierdzenie)
+	for (const entry of potwierdzenie) {
+		console.log(entry)
+		fs.writeFile('../data/game2sport.txt', `${entry}\n`, {flag: 'a'}, handleErrOnWrite)
+	}
 	// await browser.close()
 })()
