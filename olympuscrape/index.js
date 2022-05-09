@@ -58,24 +58,24 @@ const fs = require('fs');
 				const waitForElem = (selector) => {
 					return new Promise(resolve => {
 						if (document.querySelector(selector)) {
-							return resolve(document.querySelector(selector));
+							return resolve(document.querySelector(selector))
 						}
 
 						const observer = new MutationObserver(mutations => {
 							if (document.querySelector(selector)) {
-								resolve(document.querySelector(selector));
-								observer.disconnect();
+								resolve(document.querySelector(selector))
+								observer.disconnect()
 							}
-						});
+						})
 
 						observer.observe(document.body, {
 							childList: true,
 							subtree: true
-						});
-					});
+						})
+					})
 				}
 
-				const game2sport = []
+				const links = []
 
 				waitForElem('#onetrust-accept-btn-handler')
 					.then(btn => btn.click())
@@ -83,21 +83,34 @@ const fs = require('fs');
 				// musi byc tak bo sa na stronie 53 ukryte guziki i juz mam dosyc tej strony
 				for (let gindex = 0; gindex < gcount; gindex++) {
 					const gameBtns = document.querySelectorAll(`[class^="${btntype.game}"]`)
-					// gameBtns[gindex] to aktualne igrzyska (game)
+					
+					console.log(gameBtns[gindex].textContent)
 					gameBtns[gindex].click()
-					// console.log(gameBtns[gindex].textContent)
+					
+					await waitForElem(`[class^="${btntype.sport}"]`)
+					const scount = document.querySelectorAll(`[class^="${btntype.sport}"]`).length
 
-					let sbtn = await waitForElem(`[class^="${btntype.sport}"]`)
-					const sportBtns = document.querySelectorAll(`[class^="${btntype.sport}"]`)
-					// console.log(sportBtns)
-					for (const sport of sportBtns) {
-						game2sport.push(`${gameBtns[gindex].textContent}, ${sport.textContent}`)
+					for (let sindex = 0; sindex < scount; sindex++) {
+						const sportBtns = document.querySelectorAll(`[class^="${btntype.sport}"]`)
+
+						sportBtns[sindex].click()
+
+						await waitForElem(`[class^="${btntype.event}"]`)
+						const eventBtns = document.querySelectorAll(`[class^="${btntype.event}"]`)
+
+						for (const evt of eventBtns) {
+							links.push(`${gameBtns[gindex].textContent}, ${sportBtns[sindex].textContent}, ${evt.textContent}, ${evt.href}`)
+							// console.log(`${gameBtns[gindex].textContent}, ${sportBtns[sindex].textContent}, ${evt.textContent}, ${evt.href}`)
+						}
+
+						document.querySelectorAll(`[class^="${btntype.edit}"]`)[1].click()
+						await waitForElem(`[class^="${btntype.sport}"]`)
 					}
 
 					document.querySelector(`[class^="${btntype.edit}"]`).click()
-					const tbtn = await waitForElem(`[class^="${btntype.game}"]`)
+					await waitForElem(`[class^="${btntype.game}"]`)
 				}
-				resolve(game2sport)
+				resolve(links)
 			})
 		}, btntype, gcount)
 	}
@@ -112,23 +125,16 @@ const fs = require('fs');
 	// actual scraping
 	await page.goto('https://olympics.com/en/olympic-games/olympic-results')
 
-	// const gameBtns = await getButtonsNames(btnType.game)
-	// await clickBtnWithIndex(5, btnType.game)
+	if (fs.existsSync('../data/eventlinks.csv'))
+		fs.unlink('../data/eventlinks.csv', handleErrOnWrite)
 
-	// await page.waitForSelector(`[class^="${btnType.sport}"]`, { timeout: 10000 })
-	// const sportBtns = await getButtonsNames(btnType.sport)
-	// await clickBtnWithIndex(0, btnType.sport)
+	const allLinks = await getAllEventLinks(btnType, GAMESCOUNT)
 
-	// console.log(gameBtns[5], sportBtns[0])
-
-	// await page.screenshot({ path: 'debugolimp.png' })
-
-	fs.unlink('../data/game2sport.txt', handleErrOnWrite)
-	const potwierdzenie = await getAllEventLinks(btnType, GAMESCOUNT)
-	// console.log(potwierdzenie)
-	for (const entry of potwierdzenie) {
-		console.log(entry)
-		fs.writeFile('../data/game2sport.txt', `${entry}\n`, {flag: 'a'}, handleErrOnWrite)
+	for (let entry of allLinks) {
+		const idx = entry.indexOf(' ')
+		entry = entry.substring(0, idx) + ',' + entry.substring(idx, idx+5) + ', ' + entry.substring(idx+5)
+		fs.writeFile('../data/eventlinks.csv', `${entry}\n`, {flag: 'a'}, handleErrOnWrite)
 	}
-	// await browser.close()
+
+	await browser.close()
 })()
