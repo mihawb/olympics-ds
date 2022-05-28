@@ -1,7 +1,7 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
+const puppeteer = require('puppeteer')
+const fs = require('fs')
 
-(async () => {
+;(async () => {
 	// :root
 	const btnType = {
 		game: 'styles__ItemButton',
@@ -12,13 +12,14 @@ const fs = require('fs');
 	const GAMESCOUNT = 53;
 
 	// set up browser and page objects
-	const browser = await puppeteer.launch({ headless: false })
+	const browser = await puppeteer.launch()//{ headless: false })
 
 	const page = await browser.newPage()
 	page.setViewport({ width: 1280, height: 720 })
 	page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36")
 
 	// data retrieving functions
+	// have to be here since they relay on the page object
 	const getButtonsNames = async (btnclass) => {
 		return await page.evaluate(async (btnclass) => {
 			return await new Promise(resolve => {
@@ -61,8 +62,9 @@ const fs = require('fs');
 							return resolve(document.querySelector(selector))
 						}
 
-						const observer = new MutationObserver(mutations => {
+						const observer = new MutationObserver(mutations => {	
 							if (document.querySelector(selector)) {
+								// not important here but maybe for future uses
 								resolve(document.querySelector(selector))
 								observer.disconnect()
 							}
@@ -115,25 +117,18 @@ const fs = require('fs');
 		}, btntype, gcount)
 	}
 
-	const handleErrOnWrite = err => {
-		if (err) {
-			console.error(err)
-			return
-		}
-	}
-
 	// actual scraping
 	await page.goto('https://olympics.com/en/olympic-games/olympic-results')
 
 	if (fs.existsSync('../data/eventlinks.csv'))
-		fs.unlink('../data/eventlinks.csv', handleErrOnWrite)
+		fs.unlink('../data/eventlinks.csv', err => {throw err})
 
 	const allLinks = await getAllEventLinks(btnType, GAMESCOUNT)
 
 	for (let entry of allLinks) {
 		const idx = entry.indexOf(' ')
 		entry = entry.substring(0, idx) + ',' + entry.substring(idx, idx+5) + ', ' + entry.substring(idx+5)
-		fs.writeFile('../data/eventlinks.csv', `${entry}\n`, {flag: 'a'}, handleErrOnWrite)
+		fs.writeFile('../data/eventlinks.csv', `${entry}\n`, {flag: 'a'}, err => {throw err})
 	}
 
 	await browser.close()
