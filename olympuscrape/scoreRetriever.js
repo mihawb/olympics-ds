@@ -7,8 +7,8 @@ const linkFilePath = '../data/eventlinks.csv'
 
 const colType = {
 	row: 'styles__Row',
-	medal: 'styles__MedalWrapper',
-	country: 'styles__FlagWithLabelWrapper',
+	medal: 'styles__Medal',
+	country: 'styles__CountryName',
 	athlete: 'styles__AthleteBlock',
 	result: 'styles__ResultInfoWrapper',
 	notes: 'styles__NotesInfoWrapper'
@@ -36,10 +36,14 @@ const colType = {
 				const rows = document.querySelectorAll(`[class^=${colType.row}]`)
 				let resRows = []
 
-				for (row of rows) {
-					const childrenTextContent = Array.from(row.children).map(c => c.textContent)
+				for (const row of rows) {
+					let childrenTextContent = new Array(4)
 
-					// processing inner text
+					childrenTextContent[0] = row.querySelector(`[class^=${colType.medal}]`).textContent
+					childrenTextContent[1] = row.querySelector(`[class^=${colType.country}]`).textContent
+					childrenTextContent[2] = row.querySelector(`[class^=${colType.result}]`).textContent
+					childrenTextContent[3] = row.querySelector(`[class^=${colType.notes}]`).textContent
+
 					switch (childrenTextContent[0]) {
 						case 'G':
 							childrenTextContent[0] = 1
@@ -52,22 +56,34 @@ const colType = {
 							break
 						default:
 							childrenTextContent[0] = childrenTextContent[0].replaceAll('=', '')
-							childrenTextContent[0] = parseInt(childrenTextContent[0])
+							// childrenTextContent[0] = parseInt(childrenTextContent[0])
 					}
-					childrenTextContent[3] = childrenTextContent[3].substring(8)
-					childrenTextContent[4] = childrenTextContent[4].substring(6)
+					childrenTextContent[2] = childrenTextContent[2].substring(8)
+					childrenTextContent[3] = childrenTextContent[3].substring(6)
 
-					resRows.push(childrenTextContent)
+					// sort elements by place bc rows (html collection) is not sorted by itself
+					
+					resRows.push(childrenTextContent.toString())
 				}
 				resolve(resRows)
 			})
 		}, colType)
 	}
-	
-	const firstrowarr = await getInfoTableFrom(disciplines[1][5], colType)
-	
-	for (el of firstrowarr)
-		console.log(el)
+
+	if (fs.existsSync('../data/scoresAllGames.csv'))
+		fs.unlink('../data/scoresAllGames.csv', err => {if (err) throw err})
+
+	let counter = 0
+	for (const dLink of disciplines) {
+		const elemstoput = await getInfoTableFrom(dLink[5], colType)
+		for (const elem of elemstoput) {
+			await fs.writeFile('../data/scoresAllGames.csv', `${dLink.slice(0,5).toString()},${elem}\n`, {flag: 'a'}, 
+				err => {if (err) throw err})
+		}
+		
+		console.log(`link no. ${counter++}, ${(counter / disciplines.length) * 100}%`)
+		if (counter > 500) break
+	}
 
 	browser.close()
 })()

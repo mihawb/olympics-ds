@@ -12,7 +12,7 @@ const fs = require('fs')
 	const GAMESCOUNT = 53;
 
 	// set up browser and page objects
-	const browser = await puppeteer.launch()//{ headless: false })
+	const browser = await puppeteer.launch({ headless: false })
 
 	const page = await browser.newPage()
 	page.setViewport({ width: 1280, height: 720 })
@@ -101,7 +101,7 @@ const fs = require('fs')
 						const eventBtns = document.querySelectorAll(`[class^="${btntype.event}"]`)
 
 						for (const evt of eventBtns) {
-							links.push(`${gameBtns[gindex].textContent}, ${sportBtns[sindex].textContent}, ${evt.textContent}, ${evt.href}`)
+							links.push(`${gameBtns[gindex].textContent},${sportBtns[sindex].textContent},${evt.textContent},${evt.href}`)
 							// console.log(`${gameBtns[gindex].textContent}, ${sportBtns[sindex].textContent}, ${evt.textContent}, ${evt.href}`)
 						}
 
@@ -121,14 +121,15 @@ const fs = require('fs')
 	await page.goto('https://olympics.com/en/olympic-games/olympic-results')
 
 	if (fs.existsSync('../data/eventlinks.csv'))
-		fs.unlink('../data/eventlinks.csv', err => {throw err})
+		fs.unlink('../data/eventlinks.csv', err => {if (err) throw err})
+	// await fs.writeFile('../data/eventlinks.csv', 'Host,Year,Type,Sport,Event,Link\n', {flag: 'a'}, err => {if (err) throw err})
 
 	const allLinks = await getAllEventLinks(btnType, GAMESCOUNT)
 
 	for (let entry of allLinks) {
 		const idx = entry.indexOf(' ')
-		entry = entry.substring(0, idx) + ',' + entry.substring(idx, idx+5) + ', ' + entry.substring(idx+5)
-		fs.writeFile('../data/eventlinks.csv', `${entry}\n`, {flag: 'a'}, err => {throw err})
+		entry = entry.substring(0, idx) + ',' + entry.substring(idx, idx+5) + ',' + entry.substring(idx+5)
+		await fs.writeFile('../data/eventlinks.csv', `${entry}\n`, {flag: 'a'}, err => {if (err) throw err})
 	}
 
 	await browser.close()
