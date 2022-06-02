@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer')
 const fs = require('fs')
 
-// {Host, Year, Type}, Sport, Event, {place, country [, participant, notes]}
+// {Host, Year, Type}, Sport, Event, {place, country [, participant, result, notes]}
 
 const linkFilePath = '../data/eventlinks.csv'
 
@@ -24,7 +24,7 @@ const colType = {
 	if (!fs.existsSync(linkFilePath))
 		throw `File ${linkFilePath} not found`
 
-	const disciplines = fs.readFileSync(linkFilePath, 'utf8').split('\n').map(d => d.split(', '))
+	const disciplines = fs.readFileSync(linkFilePath, 'utf8').split('\n').map(d => d.split(','))
 	// console.log(`${disciplines[0]}\n${disciplines[1]}\n${Array.isArray(disciplines[1])}`)
 
 	const getInfoTableFrom = async (dLink, colType) => {
@@ -46,13 +46,13 @@ const colType = {
 
 					switch (childrenTextContent[0]) {
 						case 'G':
-							childrenTextContent[0] = 1
+							childrenTextContent[0] = '1'
 							break
 						case 'S':
-							childrenTextContent[0] = 2
+							childrenTextContent[0] = '2'
 							break
 						case 'B':
-							childrenTextContent[0] = 3
+							childrenTextContent[0] = '3'
 							break
 						default:
 							childrenTextContent[0] = childrenTextContent[0].replaceAll('=', '')
@@ -60,10 +60,8 @@ const colType = {
 					}
 					childrenTextContent[2] = childrenTextContent[2].substring(8)
 					childrenTextContent[3] = childrenTextContent[3].substring(6)
-
-					// sort elements by place bc rows (html collection) is not sorted by itself
 					
-					resRows.push(childrenTextContent.toString())
+					resRows.push(childrenTextContent)
 				}
 				resolve(resRows)
 			})
@@ -71,18 +69,28 @@ const colType = {
 	}
 
 	if (fs.existsSync('../data/scoresAllGames.csv'))
-		fs.unlink('../data/scoresAllGames.csv', err => {if (err) throw err})
+		fs.unlinkSync('../data/scoresAllGames.csv')
 
-	let counter = 0
+	if (fs.existsSync('../data/scoresErrs.log'))
+		fs.unlinkSync('../data/scoresErrs.log')
+
+	let linesRead = 0, linesWritten = 0
 	for (const dLink of disciplines) {
-		const elemstoput = await getInfoTableFrom(dLink[5], colType)
-		for (const elem of elemstoput) {
-			await fs.writeFile('../data/scoresAllGames.csv', `${dLink.slice(0,5).toString()},${elem}\n`, {flag: 'a'}, 
-				err => {if (err) throw err})
+		linesRead++
+		if (linesRead > 10) break
+
+		const scoresToPut = await getInfoTableFrom(dLink[5], colType)
+		for (const scoreArr of scoresToPut) {
+			linesWritten++
+
+			// TODO define validating function with boolean return value
+			if (scoreArr[0] === '' && (scoreArr[3] !== 'Did not finish' || scoreArr[3] !== 'Disqualified'))
+				fs.appendFileSync('../data/scoresErrs.log', `Missing place or note on line ${linesWritten}\n`)
+
+			fs.appendFileSync('../data/scoresAllGames.csv', `${dLink.slice(0,5).toString()},${scoreArr.toString()}\n`)
 		}
 		
-		console.log(`link no. ${counter++}, ${(counter / disciplines.length) * 100}%`)
-		if (counter > 500) break
+		console.log(`link no. ${linesRead}, ${(linesRead / disciplines.length) * 100}%, ${dLink.slice(0,5).toString()}`)
 	}
 
 	browser.close()

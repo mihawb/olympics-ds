@@ -121,15 +121,14 @@ const fs = require('fs')
 	await page.goto('https://olympics.com/en/olympic-games/olympic-results')
 
 	if (fs.existsSync('../data/eventlinks.csv'))
-		fs.unlink('../data/eventlinks.csv', err => {if (err) throw err})
-	// await fs.writeFile('../data/eventlinks.csv', 'Host,Year,Type,Sport,Event,Link\n', {flag: 'a'}, err => {if (err) throw err})
+		fs.unlinkSync('../data/eventlinks.csv')
 
 	const allLinks = await getAllEventLinks(btnType, GAMESCOUNT)
 
 	for (let entry of allLinks) {
 		const idx = entry.indexOf(' ')
-		entry = entry.substring(0, idx) + ',' + entry.substring(idx, idx+5) + ',' + entry.substring(idx+5)
-		await fs.writeFile('../data/eventlinks.csv', `${entry}\n`, {flag: 'a'}, err => {if (err) throw err})
+		entry = entry.substring(0, idx) + ',' + entry.substring(idx+1, idx+5) + ',' + entry.substring(idx+5)
+		fs.appendFileSync('../data/eventlinks.csv', `${entry}\n`)
 	}
 
 	await browser.close()
