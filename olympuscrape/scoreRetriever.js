@@ -14,6 +14,22 @@ const colType = {
 	notes: 'styles__NotesInfoWrapper'
 }
 
+const invalidScoreArr = (scoreArr) => {
+	if (scoreArr[0] === '') {
+		switch (scoreArr[2]) {
+			case 'DNS':
+				return false
+			case 'DNF':
+				return false
+			case 'D':
+				return false
+			default:
+				return true // no pattern matched => undisclosed exception
+		}
+	}
+	return false
+}
+
 ;(async () => {
 	const browser = await puppeteer.launch()//{ headless: false })
 
@@ -37,12 +53,12 @@ const colType = {
 				let resRows = []
 
 				for (const row of rows) {
-					let childrenTextContent = new Array(4)
+					let childrenTextContent = new Array(3)
 
 					childrenTextContent[0] = row.querySelector(`[class^=${colType.medal}]`).textContent
 					childrenTextContent[1] = row.querySelector(`[class^=${colType.country}]`).textContent
 					childrenTextContent[2] = row.querySelector(`[class^=${colType.result}]`).textContent
-					childrenTextContent[3] = row.querySelector(`[class^=${colType.notes}]`).textContent
+					let notes = row.querySelector(`[class^=${colType.notes}]`).textContent
 
 					switch (childrenTextContent[0]) {
 						case 'G':
@@ -59,7 +75,22 @@ const colType = {
 							// childrenTextContent[0] = parseInt(childrenTextContent[0])
 					}
 					childrenTextContent[2] = childrenTextContent[2].substring(8)
-					childrenTextContent[3] = childrenTextContent[3].substring(6)
+					notes = notes.substring(6)
+
+					if (childrenTextContent[2] === '') {
+						childrenTextContent[2] = notes
+						.split(' ').map(w => w.charAt(0))
+						.toString().replaceAll(',', '').toUpperCase()
+					}
+					else if (childrenTextContent[2].match(/[0-9]+:[0-9]{2}.[0-9]{2}/)) {
+						const colonidx = childrenTextContent[2].indexOf(':')
+						const dotidx = childrenTextContent[2].indexOf('.')
+
+						const mins = parseInt(childrenTextContent[2].substring(0,colonidx))
+						const secs = parseInt(childrenTextContent[2].substring(colonidx+1, dotidx))
+
+						childrenTextContent[2] = (mins * 60 + secs).toString() + childrenTextContent[2].substring(dotidx)
+					}
 					
 					resRows.push(childrenTextContent)
 				}
@@ -83,8 +114,7 @@ const colType = {
 		for (const scoreArr of scoresToPut) {
 			linesWritten++
 
-			// TODO define validating function with boolean return value
-			if (scoreArr[0] === '' && (scoreArr[3] !== 'Did not finish' || scoreArr[3] !== 'Disqualified'))
+			if (invalidScoreArr(scoreArr))
 				fs.appendFileSync('../data/scoresErrs.log', `Missing place or note on line ${linesWritten}\n`)
 
 			fs.appendFileSync('../data/scoresAllGames.csv', `${dLink.slice(0,5).toString()},${scoreArr.toString()}\n`)
