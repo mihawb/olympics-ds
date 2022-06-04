@@ -1,33 +1,15 @@
 const puppeteer = require('puppeteer')
 const fs = require('fs')
 
-// {Host, Year, Type}, Sport, Event, {place, country [, participant, result, notes]}
-
 const linkFilePath = '../data/eventlinks.csv'
 
 const colType = {
 	row: 'styles__Row',
 	medal: 'styles__Medal',
 	country: 'styles__CountryName',
-	athlete: 'styles__AthleteBlock',
+	athlete: 'styles__AthleteName',
 	result: 'styles__ResultInfoWrapper',
 	notes: 'styles__NotesInfoWrapper'
-}
-
-const invalidScoreArr = (scoreArr) => {
-	if (scoreArr[0] === '') {
-		switch (scoreArr[2]) {
-			case 'DNS':
-				return false
-			case 'DNF':
-				return false
-			case 'D':
-				return false
-			default:
-				return true // no pattern matched => undisclosed exception
-		}
-	}
-	return false
 }
 
 ;(async () => {
@@ -40,8 +22,7 @@ const invalidScoreArr = (scoreArr) => {
 	if (!fs.existsSync(linkFilePath))
 		throw `File ${linkFilePath} not found`
 
-	const disciplines = fs.readFileSync(linkFilePath, 'utf8').split('\n').map(d => d.split(','))
-	// console.log(`${disciplines[0]}\n${disciplines[1]}\n${Array.isArray(disciplines[1])}`)
+	const disciplines = fs.readFileSync(linkFilePath, 'utf8').split('\n').map(d => d.split('; '))
 
 	const getInfoTableFrom = async (dLink, colType) => {
 		await page.goto(dLink)
@@ -53,74 +34,36 @@ const invalidScoreArr = (scoreArr) => {
 				let resRows = []
 
 				for (const row of rows) {
-					let childrenTextContent = new Array(3)
+					let rowResults = new Array(5)
 
-					childrenTextContent[0] = row.querySelector(`[class^=${colType.medal}]`).textContent
-					childrenTextContent[1] = row.querySelector(`[class^=${colType.country}]`).textContent
-					childrenTextContent[2] = row.querySelector(`[class^=${colType.result}]`).textContent
-					let notes = row.querySelector(`[class^=${colType.notes}]`).textContent
-
-					switch (childrenTextContent[0]) {
-						case 'G':
-							childrenTextContent[0] = '1'
-							break
-						case 'S':
-							childrenTextContent[0] = '2'
-							break
-						case 'B':
-							childrenTextContent[0] = '3'
-							break
-						default:
-							childrenTextContent[0] = childrenTextContent[0].replaceAll('=', '')
-							// childrenTextContent[0] = parseInt(childrenTextContent[0])
-					}
-					childrenTextContent[2] = childrenTextContent[2].substring(8)
-					notes = notes.substring(6)
-
-					if (childrenTextContent[2] === '') {
-						childrenTextContent[2] = notes
-						.split(' ').map(w => w.charAt(0))
-						.toString().replaceAll(',', '').toUpperCase()
-					}
-					else if (childrenTextContent[2].match(/[0-9]+:[0-9]{2}.[0-9]{2}/)) {
-						const colonidx = childrenTextContent[2].indexOf(':')
-						const dotidx = childrenTextContent[2].indexOf('.')
-
-						const mins = parseInt(childrenTextContent[2].substring(0,colonidx))
-						const secs = parseInt(childrenTextContent[2].substring(colonidx+1, dotidx))
-
-						childrenTextContent[2] = (mins * 60 + secs).toString() + childrenTextContent[2].substring(dotidx)
-					}
+					rowResults[0] = row.querySelector(`[class^=${colType.medal}]`).textContent
+					rowResults[1] = row.querySelector(`[class^=${colType.country}]`).textContent
+					rowResults[2] = row.querySelector(`[class^=${colType.athlete}]`) ? row.querySelector(`[class^=${colType.athlete}]`).textContent : ''
+					rowResults[3] = row.querySelector(`[class^=${colType.result}]`).textContent
+					rowResults[4] = row.querySelector(`[class^=${colType.notes}]`).textContent
 					
-					resRows.push(childrenTextContent)
+					resRows.push(rowResults)
 				}
 				resolve(resRows)
 			})
 		}, colType)
 	}
 
-	if (fs.existsSync('../data/scoresAllGames.csv'))
-		fs.unlinkSync('../data/scoresAllGames.csv')
+	
+	const scrapeStart = 3404				// in case of errors midway through
+	const scrapeEnd = disciplines.length 	// results file is appended in each iteration => no need to start from scratch again
+	
+	if (fs.existsSync(`../data/scoresFrom${scrapeStart+1}.csv`))
+		fs.unlinkSync(`../data/scoresFrom${scrapeStart+1}.csv`)
 
-	if (fs.existsSync('../data/scoresErrs.log'))
-		fs.unlinkSync('../data/scoresErrs.log')
-
-	let linesRead = 0, linesWritten = 0
-	for (const dLink of disciplines) {
-		linesRead++
-		if (linesRead > 10) break
-
-		const scoresToPut = await getInfoTableFrom(dLink[5], colType)
+	for (let i = scrapeStart; i < scrapeEnd; i++) {
+		// console.log(disciplines[i])
+		const scoresToPut = await getInfoTableFrom(disciplines[i][5], colType)
 		for (const scoreArr of scoresToPut) {
-			linesWritten++
-
-			if (invalidScoreArr(scoreArr))
-				fs.appendFileSync('../data/scoresErrs.log', `Missing place or note on line ${linesWritten}\n`)
-
-			fs.appendFileSync('../data/scoresAllGames.csv', `${dLink.slice(0,5).toString()},${scoreArr.toString()}\n`)
+			fs.appendFileSync(`../data/scoresFrom${scrapeStart+1}.csv`, `${disciplines[i].slice(0,5).join('; ')}; ${scoreArr.join('; ')}${i+1 < scrapeEnd ? '\n' : ''}`)
 		}
 		
-		console.log(`link no. ${linesRead}, ${(linesRead / disciplines.length) * 100}%, ${dLink.slice(0,5).toString()}`)
+		console.log(`link no. ${i+1}, ${((i+1) / disciplines.length) * 100}%, ${disciplines[i].slice(0,5).join('; ')}`)
 	}
 
 	browser.close()
