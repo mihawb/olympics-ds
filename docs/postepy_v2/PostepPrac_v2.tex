@@ -28,6 +28,34 @@
 \maketitle
 
 \section{Napotkane problemy}
+
+\subsection{Dynamiczna zawartość strony z danymi zawodników}
+Na kolejnej stronie IO tym razem z danymi medalistów poszczególnych Igrzysk
+również wykorzystano dynamiczne doładowywanie elementów w trakcie przeglądania,
+zamiast załadowania wszystkiego na raz. Mianowicie jest to lista zawodników, która
+przy każdym doładowaniu powiększa się o kolejnych dziesięciu atletów. Guzik do
+ładowania dalszej części listy (oczywiście) jest niszczony i później tworzony nowy.
+Poniżej przedstawiono działanie aplikacji.
+\begin{figure}[h!t]
+    \centering
+    \includegraphics[width=\linewidth]{fragmentlisty.png}
+    \caption{Fragment listy zawodników}
+\end{figure}
+\begin{figure}[h!t]
+    \centering
+    \includegraphics[width=0.65\linewidth]{zachowanielisty.png}
+    \caption{Zachowanie strony przy doładowywaniu kolejnych zawodników}
+\end{figure}
+\newline
+Ciągłe pojawianie się i znikanie guzika pozwoliło jednak na ponowne zastosowanie 
+zastosowanie observera do obserwacji mutacji dokumentu, w oczekiwaniu na ponowne
+pojawienie się tego guzika. Później, gdy guzik przestaje się już pokazywać po
+załadowaniu całej zawartości callback wywoływany przez timeout scrapuje całą 
+tabelę i rozwiązuje promise, który zwraca te dane ze skryptu ewaluacyjnego do
+skryptu w Node. Moduł ten pobiera dane medalistów z tegorocznych Igrzysk zimowych
+w Pekinie, natomiast łatwo można go dostosować do pobierania danych z dowolnych
+Igrzysk. 
+
 \subsection{Brak spójności nazw państw uczestniczących i przypisów}
 Na poszczególnych podstronach z niewiadomych na pierwszy rzut oka zamiast nazw
 państw uczestniczących figurują trzyliterowe kody. Te z kolei nie są oficjalnymi
@@ -38,7 +66,7 @@ jedynym wyjściem ujednolicenia zbioru było zmapowanie wszystkich występujący
 kodów i zamiana ich na pełne nazwy państw lub organizacji. Analogicznie zastąpiono
 puste wyniki przypisami wyjaśniającymi ich brak.
 
-\subsection{Czas scrapowania}
+\subsection{Czas scrapowania wyników wszystkich dyscyplin}
 Ilość danych do pobrania i zapisania wraz z wyżej opisaną niespójnością danych
 sprawiały, że jakiekolwiek formatowanie zbioru w trakcie pobierania okazało się
 praktycznie niemożliwe, rzucając cały czas błędami. Z tego względu pobieranie 
@@ -47,10 +75,29 @@ pobrania surowych danych, a \verb|scoreFormatter.js| - do ich formatowania.
 Pozwoliło to na sprawniejsze naprawianie błędów wynikających z niespójności danych
 na bieżąco. Moduł pobierający dodatkowo może pobierać dane fragmentami, dzięki
 czemu przy jakimkolwiek błędzie nie traci się dotąd zapisanych danych. 
+\newline
+Podobny podział zastosowano przy skrapowaniu medalistów. Czas scrapowania tego
+zbioru danych nie jest aż tak długi jak w przypadku zbioru wszystkich dyscyplin,
+natomiast zwyczajnie pomaga to w utrzymaniu przejrzystości i zrozumiałości 
+kodu oraz zapewnia wyeliminowanie tzw. "złych zapachów kodu" takich jak
+rozdmuchiwanie funkcjonalności poszczególnych modułów.
 
 \section{Postępy}
-\subsection{Zbiór linków z danymi z poszczególnych dyscyplin sportowych}
-Po wykonaniu wyżej opisango scrapowania otrzymano zbiór wszystkich statycznych
+\subsection{Zbiór danych z poszczególnych dyscyplin sportowych}
+Po wykonaniu wyżej opisanego scrapowania i formatowania otrzymano pełen zbiór
+wyników wszystkich nowożytnych Igrzysk Olimpijskich. Poniżej, fragment tego zbioru.
+Wyszczególniono tylko cztery z ośmiu kolumn - pierwsze pięć od prawej były wynikiem
+scrapowania opisanego przy poprzednim opisie postępu prac, a wszystkie osiem nie
+zmieściłoby się też na stronie.
+\begin{center}
+    \csvautotabular{scoreshead20.csv}
+\end{center}
 
+\subsection{Zbiór danych wszystkich medalistów poszczególnych Igrzysk}
+Po wykonaniu wyżej opisanego scrapowania i formatowania otrzymano pełen zbiór
+medalistów Zimowych Igrzysk Olimpijskich w Pekinie, 2022. Poniżej, fragment tego zbioru.
+\begin{center}
+    \csvautotabular{athleteshead20.csv}
+\end{center}
 
 \end{document}
