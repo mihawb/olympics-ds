@@ -1,0 +1,56 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[T1]{polski}
+\usepackage[utf8]{inputenc}
+\usepackage{verbatim}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{csvsimple}
+\usepackage[figurename=Zrzut\ ekranu]{caption}
+
+\hoffset=-3.0cm                         
+\textwidth=18cm                         
+\evensidemargin=0pt
+
+\voffset=-3cm                           
+\textheight=27cm                        
+
+\setlength{\parindent}{0pt}             
+\setlength{\parskip}{\medskipamount}    
+\raggedbottom              
+
+\title{Postępy prac projktu indywidualnego - cz. 2}
+\author{Michał Banaszczak}
+\date{4 czerwca 2022} 
+
+\begin{document}
+
+\maketitle
+
+\section{Napotkane problemy}
+\subsection{Brak spójności nazw państw uczestniczących i przypisów}
+Na poszczególnych podstronach z niewiadomych na pierwszy rzut oka zamiast nazw
+państw uczestniczących figurują trzyliterowe kody. Te z kolei nie są oficjalnymi
+kodami państw, a wymyślonymi specjalnie na potrzeby IO (np. \textit{SUI} dla
+Szwajcarji zamiast oficjalnego \textit{CHE}). Dodatkowo w IO brały udział państwa
+już nie istniejące lub różne sportowe organizacje pozapaństwowe. Z tego względu
+jedynym wyjściem ujednolicenia zbioru było zmapowanie wszystkich występujących
+kodów i zamiana ich na pełne nazwy państw lub organizacji. Analogicznie zastąpiono
+puste wyniki przypisami wyjaśniającymi ich brak.
+
+\subsection{Czas scrapowania}
+Ilość danych do pobrania i zapisania wraz z wyżej opisaną niespójnością danych
+sprawiały, że jakiekolwiek formatowanie zbioru w trakcie pobierania okazało się
+praktycznie niemożliwe, rzucając cały czas błędami. Z tego względu pobieranie 
+i formatowanie podzielono na dwa moduły: \verb|scoreRetriever.js| służył do
+pobrania surowych danych, a \verb|scoreFormatter.js| - do ich formatowania.
+Pozwoliło to na sprawniejsze naprawianie błędów wynikających z niespójności danych
+na bieżąco. Moduł pobierający dodatkowo może pobierać dane fragmentami, dzięki
+czemu przy jakimkolwiek błędzie nie traci się dotąd zapisanych danych. 
+
+\section{Postępy}
+\subsection{Zbiór linków z danymi z poszczególnych dyscyplin sportowych}
+Po wykonaniu wyżej opisango scrapowania otrzymano zbiór wszystkich statycznych
+
+
+\end{document}
