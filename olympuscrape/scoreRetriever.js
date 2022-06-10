@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 
 const linkFilePath = '../data/eventlinks.csv'
+const resultsFilePath = '../data/scoresFromAllGamesNotParsed.csv'
 
 const colType = {
 	row: 'styles__Row',
@@ -13,7 +14,7 @@ const colType = {
 }
 
 ;(async () => {
-	const browser = await puppeteer.launch()//{ headless: false })
+	const browser = await puppeteer.launch() // { headless: false })
 
 	const page = await browser.newPage()
 	page.setViewport({ width: 1280, height: 720 })
@@ -50,17 +51,17 @@ const colType = {
 	}
 
 	
-	const scrapeStart = 3404				// in case of errors midway through
+	const scrapeStart = 0					// in case of errors midway through
 	const scrapeEnd = disciplines.length 	// results file is appended in each iteration => no need to start from scratch again
 	
-	if (fs.existsSync(`../data/scoresFrom${scrapeStart+1}.csv`))
-		fs.unlinkSync(`../data/scoresFrom${scrapeStart+1}.csv`)
+	if (fs.existsSync(resultsFilePath))
+		fs.unlinkSync(resultsFilePath)
 
 	for (let i = scrapeStart; i < scrapeEnd; i++) {
 		// console.log(disciplines[i])
 		const scoresToPut = await getInfoTableFrom(disciplines[i][5], colType)
 		for (const scoreArr of scoresToPut) {
-			fs.appendFileSync(`../data/scoresFrom${scrapeStart+1}.csv`, `${disciplines[i].slice(0,5).join('; ')}; ${scoreArr.join('; ')}${i+1 < scrapeEnd ? '\n' : ''}`)
+			fs.appendFileSync(resultsFilePath, `${disciplines[i].slice(0,5).join('; ')}; ${scoreArr.join('; ')}${i+1 < scrapeEnd ? '\n' : ''}`)
 		}
 		
 		console.log(`link no. ${i+1}, ${((i+1) / disciplines.length) * 100}%, ${disciplines[i].slice(0,5).join('; ')}`)

@@ -1,18 +1,20 @@
 const puppeteer = require('puppeteer')
 const fs = require('fs')
 
-;(async () => {
-	// :root
-	const btnType = {
-		game: 'styles__ItemButton',
-		sport: 'styles__WrapperButton',
-		event: 'styles__WrapperLink',
-		edit: 'styles__EditButton'
-	}
-	const GAMESCOUNT = 53;
+const btnType = {
+	game: 'styles__ItemButton',
+	sport: 'styles__WrapperButton',
+	event: 'styles__WrapperLink',
+	edit: 'styles__EditButton'
+}
 
+const GAMESCOUNT = 53
+const resultsURL = 'https://olympics.com/en/olympic-games/olympic-results'
+const eventLinksFilePath = '../data/eventlinks.csv'
+
+;(async () => {
 	// set up browser and page objects
-	const browser = await puppeteer.launch({ headless: false })
+	const browser = await puppeteer.launch() // { headless: false }) // for debugging purposes
 
 	const page = await browser.newPage()
 	page.setViewport({ width: 1280, height: 720 })
@@ -20,37 +22,6 @@ const fs = require('fs')
 
 	// data retrieving functions
 	// have to be here since they relay on the page object
-	const getButtonsNames = async (btnclass) => {
-		return await page.evaluate(async (btnclass) => {
-			return await new Promise(resolve => {
-				// add if: var for gamebtns and const for any other btns
-				const btns = document.querySelectorAll(`[class^=${btnclass}]`)
-				let result = []
-				for (const btn of btns)
-					result.push(btn.textContent)
-				resolve(result)
-			})
-		}, btnclass)
-	}
-
-	const clickBtnWithTextContent = async (btntxt, btnclass) => {
-		return await page.evaluate(async (btntxt, btnclass) => {
-			const allbtns = document.querySelectorAll(`[class^="${btnclass}"]`)
-			for (const btn of allbtns) {
-				if (btn.textContent === btntxt) {
-					btn.click()
-					break
-				}
-			}
-		}, btntxt, btnclass)
-	}
-
-	const clickBtnWithIndex = async (btnidx, btnclass) => {
-		return await page.evaluate(async (btnidx, btnclass) => {
-			const allbtns = document.querySelectorAll(`[class^="${btnclass}"]`)
-			allbtns[btnidx].click()
-		}, btnidx, btnclass)
-	}
 
 	const getAllEventLinks = async (btntype, gcount) => {
 		return await page.evaluate(async (btntype, gcount) => {
@@ -64,7 +35,6 @@ const fs = require('fs')
 
 						const observer = new MutationObserver(mutations => {	
 							if (document.querySelector(selector)) {
-								// not important here but maybe for future uses
 								resolve(document.querySelector(selector))
 								observer.disconnect()
 							}
@@ -102,7 +72,6 @@ const fs = require('fs')
 
 						for (const evt of eventBtns) {
 							links.push(`${gameBtns[gindex].textContent}; ${sportBtns[sindex].textContent}; ${evt.textContent}; ${evt.href}`)
-							// console.log(`${gameBtns[gindex].textContent}, ${sportBtns[sindex].textContent}, ${evt.textContent}, ${evt.href}`)
 						}
 
 						document.querySelectorAll(`[class^="${btntype.edit}"]`)[1].click()
@@ -118,19 +87,18 @@ const fs = require('fs')
 	}
 
 	// actual scraping
-	await page.goto('https://olympics.com/en/olympic-games/olympic-results')
+	await page.goto(resultsURL)
 
-	if (fs.existsSync('../data/eventlinks.csv'))
-		fs.unlinkSync('../data/eventlinks.csv')
+	if (fs.existsSync(eventLinksFilePath))
+		fs.unlinkSync(eventLinksFilePath)
 
 	const allLinks = await getAllEventLinks(btnType, GAMESCOUNT)
 
 	for (let i = 0; i < allLinks.length; i++) {
 		const entry = allLinks[i]
-		// const idx = entry.indexOf(' ')
 		const idx = /[0-9]{4}/.exec(entry).index - 1 // no need to check if .index exists since year will always match
 		entry = entry.substring(0, idx) + '; ' + entry.substring(idx+1, idx+5) + '; ' + entry.substring(idx+5)
-		fs.appendFileSync('../data/eventlinks.csv', `${entry}${i+1 < allLinks.length ? '\n' : ''}`)
+		fs.appendFileSync(eventLinksFilePath, `${entry}${i+1 < allLinks.length ? '\n' : ''}`)
 	}
 
 	await browser.close()

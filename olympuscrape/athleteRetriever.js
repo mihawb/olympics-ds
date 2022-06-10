@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer')
-const fs = require('fs')
+const fs = require('fs');
+const res = require('express/lib/response');
 
 // team, name, sport, gold, silver, bronze, link => (games participated, year of birth)
 
@@ -14,6 +15,9 @@ const styles = {
 	details: 'detail__list'
 }
 
+const medalistsLink = 'https://olympics.com/en/olympic-games/beijing-2022/athletes'
+const resultNotParsedPath = '../data/medalists2022NotParsed.csv'
+
 ;(async () => {
 	const browser = await puppeteer.launch()
 
@@ -21,7 +25,7 @@ const styles = {
 	page.setViewport({ width: 1280, height: 1000 })
 	page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.60 Safari/537.36")
 
-	await page.goto('https://olympics.com/en/olympic-games/beijing-2022/athletes')
+	await page.goto(medalistsLink)
 
 	const getAthletes = async (styles) => {
 		return await page.evaluate(async (styles) => {
@@ -68,7 +72,6 @@ const styles = {
 				}
 
 				const btnobs = new MutationObserver(muts => {
-					console.log("log fired")
 					if (tID) {
 						clearTimeout(tID)
 						tID = null
@@ -105,7 +108,8 @@ const styles = {
 				const detailsCollection = document.querySelector(`[class^="${styles.details}"]`).childNodes
 
 				for (const det of detailsCollection) {
-					// some are plain text and thus dont have querySelector method
+					// those come without a class and not always in the same quantity
+					// also some are plain text and thus dont have querySelector method
 					try {
 						if (det.querySelector('.col-left').textContent === 'Games participations')
 							gPart = det.querySelector('.col-right').textContent
@@ -122,16 +126,15 @@ const styles = {
 
 	const athleteArray = await getAthletes(styles)
 
-	if (fs.existsSync('../data/athletesNotParsed.csv'))
-		fs.unlinkSync('../data/athletesNotParsed.csv')
+	if (fs.existsSync(resultNotParsedPath))
+		fs.unlinkSync(resultNotParsedPath)
 
 	for (let i = 0; i < athleteArray.length; i++) {
-		// console.log(athleteArray[i])
 		console.log(`${((i+1) / athleteArray.length) * 100}%`)
 
 		const [gamesPart, yearOfBirth] = await getAthMoreData(athleteArray[i][0], styles)
 
-		fs.appendFileSync('../data/athletesNotParsed.csv',
+		fs.appendFileSync(resultNotParsedPath,
 			`${athleteArray[i].slice(1).join('; ')}; ${gamesPart}; ${yearOfBirth}${i+1 < athleteArray.length ? '\n' : ''}`)
 	}
 

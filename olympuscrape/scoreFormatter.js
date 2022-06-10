@@ -2,6 +2,9 @@ const fs = require('fs')
 
 // {Host, Year, Type}, Sport, Event, {place, country, participant, result, notes}
 
+const scoresFilePath = '../data/scoresFromAllGamesNotParsed.csv'
+const parsedFilePath = '../data/ScoresFromAllGames.csv'
+
 const countryCodesEncoder = {
 	AUT:'Austria',NOR:'Norway',CAN:'Canada',SUI:'Switzerland',ISR:'Israel',
 	ITA:'Italy',LIE:'Liechtenstein',IRL:'Ireland',MON:'Monaco',UKR:'Ukraine',
@@ -134,9 +137,6 @@ function parseResults(row) {
 
 	return row.splice(0, 9)
 }
-
-const scoresFilePath = '../data/scoresFromAllGames.csv'
-const parsedFilePath = '../data/parsedScoresFromAllGames.csv'
 
 if (!fs.existsSync(scoresFilePath))
 	throw `File ${scoresFilePath} not found`

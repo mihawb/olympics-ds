@@ -2,6 +2,9 @@ const fs = require('fs')
 
 // Team, Name, Sport, Gold, Silver, Bronze, Games part., Year of Birth
 
+const inputNotParsedPath = '../data/medalists2022NotParsed.csv'
+const parsedFilePath = '../data/medalists2022.csv'
+
 const countryCodesEncoder = {
 	AUT:'Austria',NOR:'Norway',CAN:'Canada',SUI:'Switzerland',ISR:'Israel',
 	ITA:'Italy',LIE:'Liechtenstein',IRL:'Ireland',MON:'Monaco',UKR:'Ukraine',
@@ -77,13 +80,10 @@ function parseMedal(medal) {
 	return medal === '-' ? '0' : medal
 }
 
-const athletesFilePath = '../data/athletesNotParsed.csv'
-const parsedFilePath = '../data/medalists2022.csv'
-
 if (fs.existsSync(parsedFilePath))
 	fs.unlinkSync(parsedFilePath)
 
-const athletes = fs.readFileSync(athletesFilePath, 'utf8').split('\n').map(a => a.split('; '))
+const athletes = fs.readFileSync(inputNotParsedPath, 'utf8').split('\n').map(a => a.split('; '))
 
 for (let i = 0; i < athletes.length; i++) {
 	athletes[i][0] = parseCoutryCode(athletes[i][0])
