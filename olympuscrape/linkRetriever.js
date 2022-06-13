@@ -95,7 +95,7 @@ const eventLinksFilePath = '../data/eventlinks.csv'
 	const allLinks = await getAllEventLinks(btnType, GAMESCOUNT)
 
 	for (let i = 0; i < allLinks.length; i++) {
-		const entry = allLinks[i]
+		let entry = allLinks[i]
 		const idx = /[0-9]{4}/.exec(entry).index - 1 // no need to check if .index exists since year will always match
 		entry = entry.substring(0, idx) + '; ' + entry.substring(idx+1, idx+5) + '; ' + entry.substring(idx+5)
 		fs.appendFileSync(eventLinksFilePath, `${entry}${i+1 < allLinks.length ? '\n' : ''}`)

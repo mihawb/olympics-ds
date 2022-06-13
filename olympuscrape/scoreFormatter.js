@@ -144,13 +144,15 @@ if (!fs.existsSync(scoresFilePath))
 if (fs.existsSync(parsedFilePath))
 	fs.unlinkSync(parsedFilePath)
 
-const dScores = fs.readFileSync(scoresFilePath, 'utf8').split('\r\n').map(d => d.split('; '))
+const dScores = fs.readFileSync(scoresFilePath, 'utf8').split('\n').map(d => d.split('; '))
+fs.appendFileSync(parsedFilePath, 'Host;Year;Type;Sport;Event;Place;Country;Participant;Result')
 
 for (let i = 0; i < dScores.length; i++) {
+	process.stdout.write((i / dScores.length * 100).toFixed(5) + '%\r')
 	dScores[i][5] = parseMedal(dScores[i][5])
 	dScores[i][6] = parseCoutryCode(dScores[i][6])
 	dScores[i][7] = parseAthlete(dScores[i][7])
 	dScores[i] = parseResults(dScores[i])
 
-	fs.appendFileSync(parsedFilePath, `${dScores[i].join('; ')}${i+1 < dScores.length ? '\n' : ''}`)
+	fs.appendFileSync(parsedFilePath, `${dScores[i].join(';')}${i+1 < dScores.length ? '\n' : ''}`)
 }

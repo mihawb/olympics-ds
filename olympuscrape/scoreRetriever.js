@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer')
-const fs = require('fs')
+const fs = require('fs');
 
 const linkFilePath = '../data/eventlinks.csv'
 const resultsFilePath = '../data/scoresFromAllGamesNotParsed.csv'
@@ -50,6 +50,12 @@ const colType = {
 		}, colType)
 	}
 
+	const sleep = (ms) => {
+		return new Promise((resolve) => {
+		  setTimeout(resolve, ms)
+		})
+	  }
+
 	
 	const scrapeStart = 0					// in case of errors midway through
 	const scrapeEnd = disciplines.length 	// results file is appended in each iteration => no need to start from scratch again
@@ -61,10 +67,11 @@ const colType = {
 		// console.log(disciplines[i])
 		const scoresToPut = await getInfoTableFrom(disciplines[i][5], colType)
 		for (const scoreArr of scoresToPut) {
-			fs.appendFileSync(resultsFilePath, `${disciplines[i].slice(0,5).join('; ')}; ${scoreArr.join('; ')}${i+1 < scrapeEnd ? '\n' : ''}`)
+			fs.appendFileSync(resultsFilePath, `${disciplines[i].slice(0,5).join('; ')}; ${scoreArr.join('; ')}\n`)
+			await sleep(15) // Error: EBUSY: resource busy or locked = trouble accessing file on the OS level
 		}
 		
-		console.log(`link no. ${i+1}, ${((i+1) / disciplines.length) * 100}%, ${disciplines[i].slice(0,5).join('; ')}`)
+		console.log(`link no. ${i+1}, ${(((i+1) / disciplines.length) * 100).toFixed(5)}%, ${disciplines[i].slice(0,5).join('; ')}`)
 	}
 
 	browser.close()

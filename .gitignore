@@ -1,8 +1,7 @@
 # Debug screencaps from headless Chromium
 debug*.png
 
-.ipynb_checkpoints
-BRUDNOPIS
+.ipynb_checkpoints/
 
 # Logs
 logs

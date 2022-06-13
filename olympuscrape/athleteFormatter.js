@@ -84,6 +84,7 @@ if (fs.existsSync(parsedFilePath))
 	fs.unlinkSync(parsedFilePath)
 
 const athletes = fs.readFileSync(inputNotParsedPath, 'utf8').split('\n').map(a => a.split('; '))
+fs.appendFileSync(parsedFilePath, 'Country;Athlete;Sport;Games;Gold;Silver;Bronze;YearOfBirth')
 
 for (let i = 0; i < athletes.length; i++) {
 	athletes[i][0] = parseCoutryCode(athletes[i][0])
@@ -91,5 +92,5 @@ for (let i = 0; i < athletes.length; i++) {
 	for (let j = 2; j < 6; j++)
 		athletes[i][j] = parseMedal(athletes[i][j])	
 
-	fs.appendFileSync(parsedFilePath, `${athletes[i].join('; ')}${i+1 < athletes.length ? '\n' : ''}`)
+	fs.appendFileSync(parsedFilePath, `${athletes[i].join(';')}${i+1 < athletes.length ? '\n' : ''}`)
 }
